@@ -2,68 +2,404 @@
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Alliance Camera Test</title>
+  <title>Alliance Broadband Attendance</title>
+
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .box {
+      width: 90%;
+      max-width: 430px;
+      background: white;
+      padding: 24px;
+      border-radius: 18px;
+      box-shadow: 0 5px 25px rgba(0,0,0,.12);
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    input, button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 10px;
+      box-sizing: border-box;
+      border-radius: 9px;
+      font-size: 16px;
+    }
+
+    input {
+      border: 1px solid #ddd;
+    }
+
+    button {
+      border: 0;
+      background: #222;
+      color: white;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .message {
+      text-align: center;
+      margin-top: 15px;
+      line-height: 1.5;
+    }
+
+    video {
+      width: 100%;
+      margin-top: 15px;
+      border-radius: 12px;
+      background: black;
+    }
+  </style>
 </head>
 
-<body style="font-family:Arial;text-align:center;padding:20px;">
+<body>
 
-  <h2>Alliance Broadband</h2>
+<div class="box">
 
-  <p id="status">Camera शुरू करने के लिए नीचे दबाएँ</p>
+  <div id="loginBox">
 
-  <button onclick="openCamera()"
-          style="padding:15px 25px;font-size:18px;">
-    Open Camera
-  </button>
+    <h1>Alliance Broadband</h1>
 
-  <br><br>
+    <p style="text-align:center;">
+      Attendance Management
+    </p>
 
-  <video id="camera"
-         autoplay
-         playsinline
-         style="width:100%;max-width:400px;display:none;">
-  </video>
+    <input id="username"
+           type="text"
+           placeholder="Username">
 
-  <script>
-    async function openCamera() {
+    <input id="password"
+           type="password"
+           placeholder="Password">
 
-      const status =
-        document.getElementById("status");
+    <button onclick="login()">
+      Login
+    </button>
+
+  </div>
+
+
+  <div id="dashboard" class="hidden">
+
+    <h1>Alliance Broadband</h1>
+
+    <p id="welcome"></p>
+
+    <button onclick="checkIn()">
+      Check-In
+    </button>
+
+    <div id="message" class="message"></div>
+
+    <video id="camera"
+           autoplay
+           playsinline
+           class="hidden">
+    </video>
+
+  </div>
+
+</div>
+
+
+<script>
+
+/* =================================
+   YOUR APPS SCRIPT WEB APP URL
+================================= */
+
+const API_URL =
+https://script.google.com/macros/s/AKfycbzPsCWjVfjtU3ehJQkiLwJWdOqJ5bx_HxsYzusN-fhPmtV5VZQHYGNpEfesPruR-NTN/exec
+
+
+let employee = null;
+let cameraStream = null;
+
+
+/* =================================
+   LOGIN
+================================= */
+
+async function login() {
+
+  const username =
+    document.getElementById("username").value.trim();
+
+  const password =
+    document.getElementById("password").value;
+
+  const message =
+    document.getElementById("message");
+
+
+  if (!username || !password) {
+
+    alert("Username और Password डालें।");
+
+    return;
+  }
+
+
+  message.innerText =
+    "Login हो रहा है...";
+
+
+  /*
+    अभी Login API backend में अलग endpoint
+    के रूप में जोड़ना बाकी है।
+
+    इसलिए फिलहाल यह test camera के लिए
+    आगे बढ़ने की अनुमति देगा।
+  */
+
+  employee = {
+    username: username
+  };
+
+
+  document
+    .getElementById("loginBox")
+    .classList
+    .add("hidden");
+
+
+  document
+    .getElementById("dashboard")
+    .classList
+    .remove("hidden");
+
+
+  document
+    .getElementById("welcome")
+    .innerText =
+    "Welcome " + username;
+
+
+  message.innerText =
+    "Please Check-In.";
+}
+
+
+/* =================================
+   CHECK-IN
+================================= */
+
+function checkIn() {
+
+  const message =
+    document.getElementById("message");
+
+
+  message.innerText =
+    "GPS location प्राप्त की जा रही है...";
+
+
+  if (!navigator.geolocation) {
+
+    message.innerText =
+      "इस browser में GPS उपलब्ध नहीं है।";
+
+    return;
+  }
+
+
+  navigator.geolocation.getCurrentPosition(
+
+    async function(position) {
+
+      const latitude =
+        position.coords.latitude;
+
+      const longitude =
+        position.coords.longitude;
+
+      const accuracy =
+        position.coords.accuracy;
+
+
+      message.innerText =
+        "GPS मिल गया। Office location verify हो रही है...";
+
 
       try {
 
-        status.innerText =
-          "Camera permission मांगी जा रही है...";
+        /*
+          Location verification
+        */
 
-        const stream =
-          await navigator.mediaDevices.getUserMedia({
-            video: {
-              facingMode: "user"
+        const response =
+          await fetch(API_URL, {
+
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "text/plain;charset=utf-8"
             },
-            audio: false
+
+            body: JSON.stringify({
+
+              action:
+                "VERIFY_LOCATION",
+
+              latitude:
+                latitude,
+
+              longitude:
+                longitude
+
+            })
+
           });
 
-        const video =
-          document.getElementById("camera");
 
-        video.srcObject = stream;
-        video.style.display = "block";
+        const result =
+          await response.json();
 
-        status.innerText =
-          "✅ Camera successfully चालू हो गया।";
 
-      } catch (error) {
+        if (!result.success) {
+
+          message.innerText =
+            result.message ||
+            "Office location verify नहीं हुई।";
+
+          return;
+        }
+
+
+        message.innerText =
+          "Office location verified. Camera शुरू हो रहा है...";
+
+
+        openCamera();
+
+      }
+
+      catch(error) {
 
         console.error(error);
 
-        status.innerText =
-          "❌ Camera Error: " +
-          error.name +
-          " — " +
+        message.innerText =
+          "Location verification error: " +
           error.message;
+
       }
+
+    },
+
+
+    function(error) {
+
+      message.innerText =
+        "GPS error: " +
+        error.message;
+
+    },
+
+
+    {
+      enableHighAccuracy: true,
+      timeout: 20000,
+      maximumAge: 0
     }
-  </script>
+
+  );
+}
+
+
+/* =================================
+   CAMERA
+================================= */
+
+async function openCamera() {
+
+  const message =
+    document.getElementById("message");
+
+  const camera =
+    document.getElementById("camera");
+
+
+  if (
+    !navigator.mediaDevices ||
+    !navigator.mediaDevices.getUserMedia
+  ) {
+
+    message.innerText =
+      "इस browser में Camera API उपलब्ध नहीं है।";
+
+    return;
+  }
+
+
+  try {
+
+    message.innerText =
+      "Camera permission मांगी जा रही है...";
+
+
+    cameraStream =
+      await navigator.mediaDevices.getUserMedia({
+
+        video: {
+          facingMode: "user",
+          width: {
+            ideal: 1280
+          },
+          height: {
+            ideal: 720
+          }
+        },
+
+        audio: false
+
+      });
+
+
+    camera.srcObject =
+      cameraStream;
+
+
+    camera.classList
+      .remove("hidden");
+
+
+    message.innerText =
+      "✅ Camera चालू हो गया।";
+
+
+  }
+
+  catch(error) {
+
+    console.error(error);
+
+
+    message.innerText =
+      "Camera Error: " +
+      error.name +
+      " — " +
+      error.message;
+
+  }
+
+}
+
+</script>
 
 </body>
 </html>
